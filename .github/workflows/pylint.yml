@@ -1,0 +1,39 @@
+name: Pylint
+
+on:
+  # Rodar em cada push para qualquer branch
+  push:
+    branches:
+      - '**'
+
+jobs:
+  lint:
+    # Executar em um ambiente Ubuntu
+    runs-on: ubuntu-latest
+    
+    # Definindo a matriz de versões do Python a serem testadas
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+    # Etapa de checkout do código
+    - name: Checkout do repositório
+      uses: actions/checkout@v4
+
+    # Configuração do ambiente Python para cada versão especificada
+    - name: Configurar Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # Instalação das dependências necessárias
+    - name: Instalar dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint
+
+    # Análise do código com Pylint
+    - name: Analisando o código com Pylint
+      run: |
+        pylint $(git ls-files '*.py')
