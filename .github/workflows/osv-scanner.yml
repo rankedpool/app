@@ -1,0 +1,48 @@
+name: OSV-Scanner
+
+on:
+  # Verificação de vulnerabilidades em pull requests
+  pull_request:
+    branches: [ "main" ]
+  
+  # Verificação de vulnerabilidades em grupos de merge
+  merge_group:
+    branches: [ "main" ]
+  
+  # Verificação periódica agendada (toda quinta-feira às 09:15 UTC)
+  schedule:
+    - cron: '15 9 * * 4'
+
+  # Verificação em cada push para a branch principal
+  push:
+    branches: [ "main" ]
+
+permissions:
+  # Necessário para gravar eventos de segurança e enviar o arquivo SARIF 
+  security-events: write
+  
+  # Permissão para ler o conteúdo do commit
+  contents: read
+
+jobs:
+  # Job para verificar vulnerabilidades em pushes e tarefas agendadas
+  scan-scheduled:
+    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.8.5"  # Versão mais recente
+    with:
+      # Argumentos personalizados para o scanner
+      scan-args: |-
+        -r
+        --skip-git
+        ./
+
+  # Job para verificar vulnerabilidades em pull requests
+  scan-pr:
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v1.8.5"
+    with:
+      # Argumentos personalizados para o scanner
+      scan-args: |-
+        -r
+        --skip-git
+        ./
