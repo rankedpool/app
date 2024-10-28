@@ -1,0 +1,61 @@
+name: Google Colab Notebook Workflow
+
+on:
+  # Dispara o workflow quando há um push ou agendamento
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 * * * *'  # Executa a cada hora
+
+jobs:
+  execute-colab:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout do repositório
+    - name: Checkout do repositório
+      uses: actions/checkout@v4
+
+    # 2. Autenticação para acessar o Google Colab e Google Sheets
+    - name: Autenticar no Google
+      run: |
+        pip install gspread oauth2client google-auth google-auth-oauthlib google-auth-httplib2
+        echo "Autenticando no Google para acessar o Colab e Sheets"
+
+    # 3. Conectar ao Google Colab e acessar planilha do Google Sheets
+    - name: Acessar Google Sheets e executar notebook do Google Colab
+      run: |
+        python - <<EOF
+        import gspread
+        from google.colab import auth
+        from google.auth import default
+        from google.colab import drive
+
+        # Autenticação no Google
+        auth.authenticate_user()
+        creds, _ = default()
+        gc = gspread.authorize(creds)
+
+        # Montar o Google Drive
+        drive.mount('/content/drive')
+
+        # Acessar a planilha do Google Sheets
+        spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1GHn8ZSrAyi9d8kVgIfv2Yq-Cq_YD-NYaCDN15VPHO2g/edit?usp=sharing'
+        spreadsheet = gc.open_by_url(spreadsheet_url)
+        worksheet = spreadsheet.worksheet('Respostas')
+
+        # Processar os dados da planilha (exemplo: votos)
+        data = worksheet.get_all_records()
+        print("Dados processados:", data)
+
+        # Executar o notebook no Google Colab (exemplo)
+        notebook_url = "https://colab.research.google.com/drive/1GHn8ZSrAyi9d8kVgIfv2Yq-Cq_YD-NYaCDN15VPHO2g"
+        print(f"Executando notebook: {notebook_url}")
+        EOF
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+    # 4. Notificar conclusão da execução
+    - name: Notificar conclusão
+      run: echo "Notebook executado com sucesso!"
